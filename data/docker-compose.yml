@@ -1,0 +1,23 @@
+version: "3"
+services:
+  claroline:
+    image: claroline/claroline-docker:prod
+    deploy:
+      labels:
+        traefik.port: 80
+        traefik.backend: ${PLATFORM_SUBDOMAIN}
+        traefik.frontend.rule: Host:${PLATFORM_SUBDOMAIN}.${PLATFORM_DOMAIN}
+    networks:
+      - proxy
+    environment:
+      SECRET: ${SECRET}
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_NAME: ${DB_NAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - "./claroline/:/var/www/html/claroline"
+networks:
+  proxy:
+    external:
+      name: proxy
