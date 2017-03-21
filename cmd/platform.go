@@ -12,7 +12,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/mailjet/mailjet-apiv3-go"
 
 	"github.com/forma-libre/cmanage/bin"
@@ -21,34 +20,13 @@ import (
 
 import _ "github.com/go-sql-driver/mysql" // This needs a comment, no idea why :)
 
-var err error
-var name string
-var id string
+var err          error
+var name         string
+var id           string
 var shellCommand string
 
-// Main
-var domain = viper.GetString("domain")
-var webRoot = viper.GetString("webRoot")
-
 // MySQL
-var mysqlHost = viper.GetString("mysqlHost")
-var mysqlPort = viper.GetString("mysqlPort")
-var mysqlRootUser = viper.GetString("mysqlRootUser")
-var mysqlRootPassword = viper.GetString("mysqlRootPassword")
-var mysqlDsn = mysqlRootUser+":"+mysqlRootPassword+"@tcp("+mysqlHost+":"+mysqlPort+")/"
-
-// Mailjet
-var mailjetPublicKey = viper.GetString("mailjetPublicKey")
-var mailjetSecretKey = viper.GetString("mailjetSecretKey")
-var mailjetFromName = viper.GetString("mailjetFromName")
-var mailjetFromEmail = viper.GetString("mailjetFromEmail")
-
-// Claroline
-var flPass = viper.GetString("flPass")
-var flUsername = viper.GetString("flUsername")
-var flFirstName = viper.GetString("flFirstName")
-var flLastName = viper.GetString("flLastName")
-var flEmail = viper.GetString("flEmail")
+var mysqlDsn string
 
 var platformCmd = &cobra.Command{
 	Use:   "platform",
@@ -61,15 +39,15 @@ var platformCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		subDomain := args[0]
-		dbName := "cc_" + subDomain // This need filtering
-		dbUser := dbName
-		dbPass := utils.NewPassword(12)
-		secret := utils.NewPassword(32)
-		clientPass := utils.NewPassword(12)
-		clientUsername := subDomain + "Admin"
+		dbName          := "cc_" + subDomain // This need filtering
+		dbUser          := dbName
+		dbPass          := utils.NewPassword(12)
+		secret          := utils.NewPassword(32)
+		clientPass      := utils.NewPassword(12)
+		clientUsername  := subDomain + "Admin"
 		clientFirstName := "John" // Get this from flag
-		clientLastName := "Doe" // Get this from flag
-		clientEmail := "John.doe@client.net" // Get this from flag
+		clientLastName  := "Doe" // Get this from flag
+		clientEmail     := "John.doe@client.net" // Get this from flag
 
 		if len(args) == 0 {
 			fmt.Println("You must specify the platform name.")
@@ -81,18 +59,18 @@ var platformCreateCmd = &cobra.Command{
 			fmt.Println("See 'platform create --help'")
 			os.Exit(1)
 		}
-		if d, err := utils.Exists(webRoot + subDomain); d {
+		if d, err := utils.Exists(Config.webRoot + subDomain); d {
 			fmt.Println("Error: " + subDomain + " directory allready exists.")
 			utils.Check(err)
 			os.Exit(1)
 		}
 		fmt.Println("Making directory " + subDomain)
-		err = os.MkdirAll(webRoot+subDomain, 0755)
+		err = os.MkdirAll(Config.webRoot+subDomain, 0755)
 		utils.Check(err)
 
 		fmt.Println("Making id file " + id)
 		d := []byte(id)
-		err = ioutil.WriteFile(webRoot+subDomain+"/id", d, 0644)
+		err = ioutil.WriteFile(Config.webRoot+subDomain+"/id", d, 0644)
 		utils.Check(err)
 
 		fmt.Println("Creating docker-compose.yml")
@@ -100,18 +78,20 @@ var platformCreateCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println("Error: Asset not found")
 		}
-		err = ioutil.WriteFile(webRoot+subDomain+"/docker-compose.yml", data, 0644)
+		err = ioutil.WriteFile(Config.webRoot+subDomain+"/docker-compose.yml", data, 0644)
 		utils.Check(err)
 
 		fmt.Println("Copying Claroline (this can be long)")
-		err = utils.CopyDir(releasePath+"current/claroline", webRoot+subDomain+"/claroline")
+		err = utils.CopyDir(Config.releasePath+"current/claroline", Config.webRoot+subDomain+"/claroline")
 		utils.Check(err)
 
 		fmt.Println("Generating .env file")
-		e := []byte("SECRET=" + secret + "\nPLATFORM_SUBDOMAIN=" + subDomain + "\nPLATFORM_DOMAIN=" + domain + "\nDB_HOST=" + mysqlHost + "\nDB_USER=" + dbUser + "\nDB_PASSWORD=" + dbPass + "\nDB_NAME=" + dbName)
-		err = ioutil.WriteFile(webRoot+subDomain+"/.env", e, 0644)
+		e := []byte("SECRET=" + secret + "\nPLATFORM_SUBDOMAIN=" + subDomain + "\nPLATFORM_DOMAIN=" + Config.domain + "\nDB_HOST=" + Config.mysqlHost + "\nDB_USER=" + dbUser + "\nDB_PASSWORD=" + dbPass + "\nDB_NAME=" + dbName)
+		err = ioutil.WriteFile(Config.webRoot+subDomain+"/.env", e, 0644)
 		utils.Check(err)
 
+		mysqlDsn = Config.mysqlRootUser + ":" + Config.mysqlRootPassword + "@tcp(" + Config.mysqlHost + ":" + Config.mysqlPort + ")/"
+		
 		db, err := sql.Open("mysql", mysqlDsn)
 		utils.Check(err)
 		defer db.Close()
@@ -142,22 +122,22 @@ var platformCreateCmd = &cobra.Command{
 			fmt.Println("Error: Asset not found")
 		}
 
-		err = os.Chmod(webRoot+subDomain+"/claroline/app/cache", 0777)
+		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/cache", 0777)
 		utils.Check(err)
 
-		err = os.Chmod(webRoot+subDomain+"/claroline/app/config", 0777)
+		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/config", 0777)
 		utils.Check(err)
 
-		err = os.Chmod(webRoot+subDomain+"/claroline/app/logs", 0777)
+		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/logs", 0777)
 		utils.Check(err)
 
-		err = os.Chmod(webRoot+subDomain+"/claroline/app/sessions", 0777)
+		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/sessions", 0777)
 		utils.Check(err)
 
-		err = os.Chmod(webRoot+subDomain+"/claroline/web/uploads", 0777)
+		err = os.Chmod(Config.webRoot+subDomain+"/claroline/web/uploads", 0777)
 		utils.Check(err)
 
-		err = os.Chmod(webRoot+subDomain+"/claroline/files", 0777)
+		err = os.Chmod(Config.webRoot+subDomain+"/claroline/files", 0777)
 		utils.Check(err)
 
 		shellCommand = "docker pull claroline/claroline-docker:prod"
@@ -165,15 +145,15 @@ var platformCreateCmd = &cobra.Command{
 		utils.Check(err)
 		fmt.Printf("%s\n", out)
 
-    env := "SECRET=\""+secret+"\" PLATFORM_SUBDOMAIN=\""+subDomain+"\" PLATFORM_DOMAIN=\""+domain+"\" DB_HOST=\""+mysqlHost+"\" DB_USER=\""+dbUser+"\" DB_PASSWORD=\""+dbPass+"\" DB_NAME=\""+dbName+"\""
+    env := "SECRET=\""+secret+"\" PLATFORM_SUBDOMAIN=\""+subDomain+"\" PLATFORM_DOMAIN=\""+Config.domain+"\" DB_HOST=\""+Config.mysqlHost+"\" DB_USER=\""+dbUser+"\" DB_PASSWORD=\""+dbPass+"\" DB_NAME=\""+dbName+"\""
 
-		shellCommand = "cd "+webRoot+subDomain+"/ && env "+env+" docker stack deploy --compose-file docker-compose.yml "+subDomain
+		shellCommand = "cd "+Config.webRoot+subDomain+"/ && env "+env+" docker stack deploy --compose-file docker-compose.yml "+subDomain
 		fmt.Println("Executing: "+shellCommand)
 		out, err = exec.Command("sh", "-c", shellCommand).Output()
 		utils.Check(err)
 		fmt.Printf("%s\n", out)
 
-		fmt.Println("Sleeping 20s") // TODO this coud be better
+		fmt.Println("Sleeping 20s") // TODO this coud be way better
 		time.Sleep(20000 * time.Millisecond)
 
 		out, err = exec.Command("docker", "ps", "-q", "--filter", "name="+subDomain+"_claroline").Output()
@@ -200,7 +180,7 @@ var platformCreateCmd = &cobra.Command{
 		fmt.Printf("%s\n", out)
 
 		fmt.Println("Create Forma-Libre User")
-		cmdStr = "docker exec -i " + containerID + " sh -c 'cd claroline && php app/console claroline:user:create -a " + flFirstName + " " + flLastName + " " + flUsername + " " + flPass + " " + flEmail + "'"
+		cmdStr = "docker exec -i " + containerID + " sh -c 'cd claroline && php app/console claroline:user:create -a " + Config.clarolineFirstName + " " + Config.clarolineLastName + " " + Config.clarolineUsername + " " + Config.clarolinePassword + " " + Config.clarolineEmail + "'"
 		out, err = exec.Command("sh", "-c", cmdStr).Output()
 		utils.Check(err)
 		fmt.Printf("%s\n", out)
@@ -212,18 +192,18 @@ var platformCreateCmd = &cobra.Command{
 		utils.Check(err)
 		fmt.Printf("%s\n", out)
 
-		mj := mailjet.NewMailjetClient(mailjetPublicKey, mailjetSecretKey)
+		mj := mailjet.NewMailjetClient(Config.mailjetPublicKey, Config.mailjetSecretKey)
 
     param := &mailjet.InfoSendMail{
-        FromEmail: mailjetFromEmail,
-        FromName: mailjetFromName,
+        FromEmail: Config.mailjetFromEmail,
+        FromName: Config.mailjetFromName,
         Recipients: []mailjet.Recipient{
             mailjet.Recipient{
-                Email: mailjetFromEmail,
+                Email: Config.mailjetFromEmail,
             },
         },
         Subject: "Your new Claroline Connect platform has been created!",
-        TextPart: "Hello [[USERNAME ]]\nYour new Claroline Connect platform is ready, here is the information you need to connect:\nURL: https://"+ subDomain + "." + domain + "\nUsername: " + clientUsername + "\nPassword: " + clientPass +"\n" + "Enjoy!", // TODO this could be better
+        TextPart: "Hello [[USERNAME ]]\nYour new Claroline Connect platform is ready, here is the information you need to connect:\nURL: https://"+ subDomain + "." + Config.domain + "\nUsername: " + clientUsername + "\nPassword: " + clientPass +"\n" + "Enjoy!", // TODO this could be better
     }
 
     res, err := mj.SendMail(param)
@@ -242,14 +222,14 @@ var platformLsCmd = &cobra.Command{
 	Short: "List platforms",
 	Run: func(cmd *cobra.Command, args []string) {
 		var id string
-		files, _ := ioutil.ReadDir(webRoot)
+		files, _ := ioutil.ReadDir(Config.webRoot)
 		table := uitable.New()
 		table.MaxColWidth = 80
 		table.AddRow("PLATFORM ID", "NAME", "CREATED")
 		for _, f := range files {
 			if f.IsDir() {
-				if _, err := os.Stat(webRoot + f.Name() + "/id"); err == nil {
-					b, err := ioutil.ReadFile(webRoot + f.Name() + "/id")
+				if _, err := os.Stat(Config.webRoot + f.Name() + "/id"); err == nil {
+					b, err := ioutil.ReadFile(Config.webRoot + f.Name() + "/id")
 					utils.Check(err)
 					id = string(b)
 				} else {
@@ -272,9 +252,11 @@ var platformRmCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		for _, v := range args {
-			os.RemoveAll(webRoot + v)
+			os.RemoveAll(Config.webRoot + v)
 			subDomain := v
 			dbName := "cc_" + subDomain //This need filtering
+
+			mysqlDsn = Config.mysqlRootUser + ":" + Config.mysqlRootPassword + "@tcp(" + Config.mysqlHost + ":" + Config.mysqlPort + ")/"
 
 			db, err := sql.Open("mysql", mysqlDsn)
 			utils.Check(err)

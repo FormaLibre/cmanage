@@ -20,4 +20,4 @@ services:
 networks:
   proxy:
     external:
-      name: proxy
+      name: cmanager_proxy_network

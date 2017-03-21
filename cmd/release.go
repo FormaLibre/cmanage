@@ -11,12 +11,9 @@ import (
 	"github.com/gosuri/uitable"
 	"github.com/mholt/archiver"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/forma-libre/cmanage/utils"
 )
-
-var releasePath = viper.GetString("releasePath")
 
 var releaseCmd = &cobra.Command{
 	Use:   "release",
@@ -27,13 +24,13 @@ var releaseLsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List releases",
 	Run: func(cmd *cobra.Command, args []string) {
-		files, _ := ioutil.ReadDir(releasePath)
+		files, _ := ioutil.ReadDir(Config.releasePath)
 		table := uitable.New()
 		table.MaxColWidth = 80
 		table.AddRow("NAME", "CREATED", "SIZE")
 		for _, f := range files {
 			if f.IsDir() {
-				dir := releasePath + f.Name()
+				dir := Config.releasePath + f.Name()
 				info, err := os.Lstat(dir)
 				if err != nil {
 					fmt.Println(err)
@@ -55,22 +52,23 @@ var releaseGetCmd = &cobra.Command{
 			fmt.Println("See 'release get --help'")
 			os.Exit(1)
 		}
-		if _, err := os.Stat(releasePath); os.IsNotExist(err) {
-			os.MkdirAll(releasePath, 0755)
+		if _, err := os.Stat(Config.releasePath); os.IsNotExist(err) {
+			os.MkdirAll(Config.releasePath, 0755)
 		}
+		utils.Check(err)
 		resp, err := http.Get("http://packages.claroline.net/releases/" + args[0] + "/claroline-" + args[0] + ".tar.gz")
 		if err == nil && (resp.StatusCode == 200) {
 			fmt.Println("Downloading release " + args[0] + " archive.")
 			defer resp.Body.Close()
-			out, err := os.Create(releasePath + "/claroline-" + args[0] + ".tar.gz")
+			out, err := os.Create(Config.releasePath + "/claroline-" + args[0] + ".tar.gz")
 			defer out.Close()
 			utils.Check(err)
 			_, err = io.Copy(out, resp.Body)
 			fmt.Println("Unpacking release " + args[0] + ".")
-			err = archiver.TarGz.Open(releasePath+"/claroline-"+args[0]+".tar.gz", releasePath+args[0])
+			err = archiver.TarGz.Open(Config.releasePath+"/claroline-"+args[0]+".tar.gz", Config.releasePath+args[0])
 			utils.Check(err)
 			fmt.Println("Removing release " + args[0] + " archive.")
-			err = os.Remove(releasePath + "/claroline-" + args[0] + ".tar.gz")
+			err = os.Remove(Config.releasePath + "/claroline-" + args[0] + ".tar.gz")
 			utils.Check(err)
 		} else {
 			utils.Check(err)
@@ -91,7 +89,7 @@ var releaseSetCmd = &cobra.Command{
 			fmt.Println("See 'release set --help'")
 			os.Exit(1)
 		}
-		path := releasePath + args[0]
+		path := Config.releasePath + args[0]
 		if d, err := utils.NotExists(path); d {
 			utils.Check(err)
 			fmt.Println("Error : Non existant release.")
@@ -99,7 +97,7 @@ var releaseSetCmd = &cobra.Command{
 			fmt.Println("See 'release set --help'")
 			os.Exit(1)
 		}
-		os.Symlink(path, releasePath+"current")
+		os.Symlink(path, Config.releasePath+"current")
 		fmt.Println("Current release set command to " + args[0] + ".")
 	},
 }
@@ -114,7 +112,7 @@ var releaseRmCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		for _, v := range args {
-			os.RemoveAll(releasePath + v)
+			os.RemoveAll(Config.releasePath + v)
 			fmt.Println(v)
 		}
 	},
