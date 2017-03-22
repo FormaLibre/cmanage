@@ -60,7 +60,7 @@ var platformCreateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if d, err := utils.Exists(Config.webRoot + subDomain); d {
-			fmt.Println("Error: " + subDomain + " directory allready exists.")
+			jww.ERROR.Println(subDomain + " directory allready exists.")
 			utils.Check(err)
 			os.Exit(1)
 		}
@@ -76,7 +76,7 @@ var platformCreateCmd = &cobra.Command{
 		fmt.Println("Creating docker-compose.yml")
 		data, err := bin.Asset("data/docker-compose.yml")
 		if err != nil {
-			fmt.Println("Error: Asset not found")
+			jww.ERROR.Println("Asset not found")
 		}
 		err = ioutil.WriteFile(Config.webRoot+subDomain+"/docker-compose.yml", data, 0644)
 		utils.Check(err)
@@ -119,29 +119,16 @@ var platformCreateCmd = &cobra.Command{
 		fmt.Println("Creating deploy script")
 		data, err = bin.Asset("data/deploy.sh")
 		if err != nil {
-			fmt.Println("Error: Asset not found")
+			jww.ERROR.Println("Asset not found")
 		}
 
-		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/cache", 0777)
+		shellCommand = "chmod -R 777 "+Config.webRoot+subDomain+"/claroline/app/cache "+Config.webRoot+subDomain+"/claroline/app/config "+Config.webRoot+subDomain+"/claroline/app/logs "+Config.webRoot+subDomain+"/claroline/app/sessions "+Config.webRoot+subDomain+"/claroline/web/uploads "+Config.webRoot+subDomain+"/claroline/files "
+		out, err := exec.Command("sh", "-c", shellCommand).Output()
 		utils.Check(err)
-
-		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/config", 0777)
-		utils.Check(err)
-
-		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/logs", 0777)
-		utils.Check(err)
-
-		err = os.Chmod(Config.webRoot+subDomain+"/claroline/app/sessions", 0777)
-		utils.Check(err)
-
-		err = os.Chmod(Config.webRoot+subDomain+"/claroline/web/uploads", 0777)
-		utils.Check(err)
-
-		err = os.Chmod(Config.webRoot+subDomain+"/claroline/files", 0777)
-		utils.Check(err)
+		fmt.Printf("%s\n", out)
 
 		shellCommand = "docker pull claroline/claroline-docker:prod"
-		out, err := exec.Command("sh", "-c", shellCommand).Output()
+		out, err = exec.Command("sh", "-c", shellCommand).Output()
 		utils.Check(err)
 		fmt.Printf("%s\n", out)
 
