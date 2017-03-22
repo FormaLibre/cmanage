@@ -91,7 +91,7 @@ var platformCreateCmd = &cobra.Command{
 		utils.Check(err)
 
 		mysqlDsn = Config.mysqlRootUser + ":" + Config.mysqlRootPassword + "@tcp(" + Config.mysqlHost + ":" + Config.mysqlPort + ")/"
-		
+
 		db, err := sql.Open("mysql", mysqlDsn)
 		utils.Check(err)
 		defer db.Close()
@@ -252,6 +252,12 @@ var platformRmCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		for _, v := range args {
+			fmt.Println("Removing docker service: "+v)
+			shellCommand = "docker service rm "+v+"_claroline"
+			_, _ = exec.Command("sh", "-c", shellCommand).Output()
+			utils.Check(err)
+
+			fmt.Println("Removing files: "+ Config.webRoot + v)
 			os.RemoveAll(Config.webRoot + v)
 			subDomain := v
 			dbName := "cc_" + subDomain //This need filtering
@@ -278,8 +284,6 @@ var platformRmCmd = &cobra.Command{
 			stm = "DROP USER IF EXISTS " + dbUser
 			_, err = db.Exec(stm)
 	    utils.Check(err)
-
-			fmt.Println(v)
 		}
 
 	},
