@@ -12,6 +12,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gosuri/uitable"
 	"github.com/spf13/cobra"
+	jww "github.com/spf13/jwalterweatherman"
 	"github.com/mailjet/mailjet-apiv3-go"
 
 	"github.com/forma-libre/cmanage/bin"

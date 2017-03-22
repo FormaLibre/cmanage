@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -26,6 +25,7 @@ type config struct {
 	clarolineFirstName string
 	clarolineLastName  string
 	clarolineEmail     string
+	proxyAcmeEmail     string
 }
 
 var (
@@ -176,6 +176,13 @@ func initConfig() {
 		os.Exit(1)
 	} else {
 		Config.clarolineEmail = viper.GetString("claroline.email")
+	}
+
+	if !viper.IsSet("proxy.acmeEmail") {
+		jww.ERROR.Println("proxy.acmeEmail not set in config file")
+		os.Exit(1)
+	} else {
+		Config.proxyAcmeEmail = viper.GetString("proxy.acmeEmail")
 	}
 }
 
