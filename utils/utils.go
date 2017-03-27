@@ -4,12 +4,14 @@ import (
   "fmt"
   "os"
   "io"
-  "log"
   "compress/gzip"
   "path/filepath"
   "io/ioutil"
+
+  jww "github.com/spf13/jwalterweatherman"
 )
 
+// DiskUsage Caluculated used disk space for a given folder
 func DiskUsage(currentPath string, info os.FileInfo) int64 {
   size := info.Size()
   if !info.IsDir() {
@@ -35,6 +37,7 @@ func DiskUsage(currentPath string, info os.FileInfo) int64 {
   return size
 }
 
+// Exists function checks if a path exists on the filesystem
 func Exists(path string) (bool, error) {
   _, err := os.Stat(path)
   if err == nil { return true, nil }
@@ -42,6 +45,7 @@ func Exists(path string) (bool, error) {
   return true, err
 }
 
+// NotExists function checks if a path is non existant on the filesystem
 func NotExists(path string) (bool, error) {
   _, err := os.Stat(path)
   if err == nil { return false, nil }
@@ -49,12 +53,14 @@ func NotExists(path string) (bool, error) {
   return false, err
 }
 
+// Check checks for errors
 func Check(e error) {
   if e != nil {
-    log.Fatal(e)
+    jww.ERROR.Println(e)
   }
 }
 
+// Ungzip unzips target archive
 func Ungzip(source, target string) error {
 	reader, err := os.Open(source)
 	if err != nil {

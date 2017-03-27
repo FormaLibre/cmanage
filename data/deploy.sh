@@ -16,4 +16,5 @@ sleep 30
 docker exec -it $(docker ps -q --filter name=${PLATFORM_SUBDOMAIN}_claroline) sh -c "cd claroline && php scripts/configure.php"
 docker exec -it $(docker ps -q --filter name=${PLATFORM_SUBDOMAIN}_claroline) sh -c "cd claroline && composer install"
 docker exec -it $(docker ps -q --filter name=${PLATFORM_SUBDOMAIN}_claroline) sh -c "cd claroline && composer fast-install"
+docker exec -it $(docker ps -q --filter name=${PLATFORM_SUBDOMAIN}_claroline) sh -c "sed -i \"/ssl_enabled: false/c\ssl_enabled: true\" claroline/app/config/platform_options.yml"
 docker exec -it $(docker ps -q --filter name=${PLATFORM_SUBDOMAIN}_claroline) sh -c "cd claroline && php app/console claroline:user:create -a first last user pass email"

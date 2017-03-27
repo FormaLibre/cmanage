@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/mailjet/mailjet-apiv3-go"
+	"github.com/ovh/go-ovh/ovh"
 
 	"github.com/forma-libre/cmanage/bin"
 	"github.com/forma-libre/cmanage/utils"
@@ -60,6 +61,27 @@ var platformCreateCmd = &cobra.Command{
 			fmt.Println("See 'platform create --help'")
 			os.Exit(1)
 		}
+
+		OvhClient, err := ovh.NewClient(
+			"ovh-eu",
+			Config.ovhAppKey, //AppKey
+			Config.ovhAppSecret, //AppSecret
+			Config.ovhConsumerKey, //ConsumerKey
+		)
+
+		utils.Check(err)
+
+		var record Record
+		record.Target = Config.ovhRecordTarget
+		record.FieldType = "CNAME"
+		record.SubDomain = subDomain
+
+		err = OvhClient.Post("/domain/zone/"+Config.domain+"/record", record, nil)
+		utils.Check(err)
+
+		err = OvhClient.Post("/domain/zone/"+Config.domain+"/refresh", nil, nil)
+		utils.Check(err)
+
 		if d, err := utils.Exists(Config.webRoot + subDomain); d {
 			jww.ERROR.Println(subDomain + " directory allready exists.")
 			utils.Check(err)

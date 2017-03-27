@@ -3,9 +3,12 @@ package cmd
 import (
 	"os"
 
+	"github.com/ovh/go-ovh/ovh"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	jww "github.com/spf13/jwalterweatherman"
+
+	"github.com/forma-libre/cmanage/utils"
 )
 
 type config struct {
@@ -26,6 +29,17 @@ type config struct {
 	clarolineLastName  string
 	clarolineEmail     string
 	proxyAcmeEmail     string
+	ovhAppKey          string
+	ovhAppSecret       string
+	ovhConsumerKey     string
+	ovhRecordTarget    string
+}
+
+// Record defines the fields for an ovh domain record
+type Record struct {
+	Target    string `json:"target"`
+	FieldType string `json:"fieldType"`
+	SubDomain string `json:"subDomain"`
 }
 
 var (
@@ -35,6 +49,8 @@ var (
 	ConfigFile string
 	// Config holder
 	Config struct{config}
+	// OvhClient : OVH CLient
+	OvhClient struct {ovh.Client}
 )
 
 // RootCmd is command's root command.
@@ -46,11 +62,8 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command
 func Execute(version string) {
 	VERSION = version
-
-	if err := RootCmd.Execute(); err != nil {
-		jww.ERROR.Println(err)
-		os.Exit(-1)
-	}
+	err = RootCmd.Execute();
+	utils.Check(err)
 }
 
 func init() {
@@ -183,6 +196,34 @@ func initConfig() {
 		os.Exit(1)
 	} else {
 		Config.proxyAcmeEmail = viper.GetString("proxy.acmeEmail")
+	}
+
+	if !viper.IsSet("ovh.appKey") {
+		jww.ERROR.Println("ovh.appKey not set in config file")
+		os.Exit(1)
+	} else {
+		Config.ovhAppKey = viper.GetString("ovh.appKey")
+	}
+
+	if !viper.IsSet("ovh.appSecret") {
+		jww.ERROR.Println("ovh.appSecret not set in config file")
+		os.Exit(1)
+	} else {
+		Config.ovhAppSecret = viper.GetString("ovh.appSecret")
+	}
+
+	if !viper.IsSet("ovh.consumerKey") {
+		jww.ERROR.Println("ovh.consumerKey not set in config file")
+		os.Exit(1)
+	} else {
+		Config.ovhConsumerKey = viper.GetString("ovh.consumerKey")
+	}
+
+	if !viper.IsSet("ovh.recordTarget") {
+		jww.ERROR.Println("ovh.recordTarget not set in config file")
+		os.Exit(1)
+	} else {
+		Config.ovhRecordTarget = viper.GetString("ovh.recordTarget")
 	}
 }
 

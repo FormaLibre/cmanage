@@ -14,6 +14,11 @@ secretKey = ""
 fromName = ""
 fromEmail = ""
 
+[ovh]
+appKey = ""
+appSecret = ""
+consumerKey = ""
+
 [mysql]
 host = ""
 port = ""
