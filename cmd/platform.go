@@ -22,10 +22,13 @@ import (
 
 import _ "github.com/go-sql-driver/mysql" // This needs a comment, no idea why :)
 
-var err          error
-var name         string
-var id           string
-var shellCommand string
+var err             error
+var name            string
+var id              string
+var clientFirstName string
+var clientLastName  string
+var clientEmail     string
+var shellCommand    string
 
 // MySQL
 var mysqlDsn string
@@ -47,9 +50,9 @@ var platformCreateCmd = &cobra.Command{
 		secret          := utils.NewPassword(32)
 		clientPass      := utils.NewPassword(12)
 		clientUsername  := subDomain + "Admin"
-		clientFirstName := "John" // Get this from flag
-		clientLastName  := "Doe" // Get this from flag
-		clientEmail     := "John.doe@client.net" // Get this from flag
+		//clientFirstName := "John" // Get this from flag
+		//clientLastName  := "Doe" // Get this from flag
+		//clientEmail     := "John.doe@client.net" // Get this from flag
 
 		if len(args) == 0 {
 			fmt.Println("You must specify the platform name.")
@@ -58,6 +61,21 @@ var platformCreateCmd = &cobra.Command{
 		}
 		if id == "" {
 			fmt.Println("You must specify the platform ID.")
+			fmt.Println("See 'platform create --help'")
+			os.Exit(1)
+		}
+		if clientFirstName == "" {
+			fmt.Println("You must specify the clients first name.")
+			fmt.Println("See 'platform create --help'")
+			os.Exit(1)
+		}
+		if clientLastName == "" {
+			fmt.Println("You must specify the clients last name.")
+			fmt.Println("See 'platform create --help'")
+			os.Exit(1)
+		}
+		if clientEmail == "" {
+			fmt.Println("You must specify the clients email.")
 			fmt.Println("See 'platform create --help'")
 			os.Exit(1)
 		}
@@ -209,11 +227,11 @@ var platformCreateCmd = &cobra.Command{
         FromName: Config.mailjetFromName,
         Recipients: []mailjet.Recipient{
             mailjet.Recipient{
-                Email: Config.mailjetFromEmail,
+                Email: clientEmail,
             },
         },
         Subject: "Your new Claroline Connect platform has been created!",
-        TextPart: "Hello [[USERNAME ]]\nYour new Claroline Connect platform is ready, here is the information you need to connect:\nURL: https://"+ subDomain + "." + Config.domain + "\nUsername: " + clientUsername + "\nPassword: " + clientPass +"\n" + "Enjoy!", // TODO this could be better
+        TextPart: "Hello "+ clientFirstName + " " + clientLastName+ "\nYour new Claroline Connect platform is ready, here is the information you need to connect:\nURL: https://"+ subDomain + "." + Config.domain + "\nUsername: " + clientUsername + "\nPassword: " + clientPass +"\n" + "Enjoy!", // TODO this could be better
     }
 
     res, err := mj.SendMail(param)
@@ -323,4 +341,7 @@ func init() {
 	platformCmd.AddCommand(platformStopCmd)
 	platformCreateCmd.Flags().StringVarP(&name, "name", "n", "", "Claroline Connect Platform Name")
 	platformCreateCmd.Flags().StringVarP(&id, "id", "i", "", "Forma Libre Manager ID")
+	platformCreateCmd.Flags().StringVarP(&clientFirstName, "clientFirstName", "f", "", "Client first name")
+	platformCreateCmd.Flags().StringVarP(&clientLastName, "clientLastName", "l", "", "Client last name")
+	platformCreateCmd.Flags().StringVarP(&clientEmail, "clientEmail", "e", "", "Client email")
 }
